@@ -239,7 +239,7 @@ func buildMethodCommand(ctx context.Context, f *cmdutil.Factory, spec methodComm
 	}
 	cmdmeta.SetSource(cmd, cmdmeta.SourceService, true)
 
-	cmd.Flags().StringVar(&opts.Params, "params", "", "Raw URL/query params JSON. Supports - and @file.")
+	cmd.Flags().StringVar(&opts.Params, "raw-params", "", "Raw URL/query params JSON. Supports - and @file.")
 	if spec.acceptsBody {
 		dataUsage := "JSON request body. Supports - and @file."
 		if !spec.declaresBody {
