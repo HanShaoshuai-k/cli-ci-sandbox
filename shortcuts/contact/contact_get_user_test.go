@@ -5,12 +5,16 @@ package contact
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/larksuite/cli/errs"
 	"github.com/larksuite/cli/internal/cmdutil"
 	"github.com/larksuite/cli/internal/httpmock"
+	"github.com/larksuite/cli/shortcuts/common"
+	"github.com/spf13/cobra"
 )
 
 func TestGetUser_BotCurrentUserValidationTyped(t *testing.T) {
@@ -121,5 +125,25 @@ func TestGetUser_UserBasicBatchUsesTypedAPI(t *testing.T) {
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte(`"user"`)) {
 		t.Fatalf("stdout should include user object, got %s", stdout.String())
+	}
+}
+
+func TestContactGetUserRejectsUnsupportedUserIDType(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	cmd.Flags().String("user-id", "", "")
+	cmd.Flags().String("user-id-type", "open_id", "")
+	if err := cmd.Flags().Set("user-id", "ou_xxx"); err != nil {
+		t.Fatalf("set user-id: %v", err)
+	}
+	if err := cmd.Flags().Set("user-id-type", "email"); err != nil {
+		t.Fatalf("set user-id-type: %v", err)
+	}
+
+	err := ContactGetUser.Validate(context.Background(), &common.RuntimeContext{Cmd: cmd})
+	if err == nil {
+		t.Fatal("expected invalid user-id-type error")
+	}
+	if !strings.Contains(err.Error(), "invalid --user-id-type") {
+		t.Fatalf("expected user-id-type validation error, got %v", err)
 	}
 }
