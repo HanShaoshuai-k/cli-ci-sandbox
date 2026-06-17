@@ -61,8 +61,6 @@ type SkillQualityInput struct {
 	facts.SkillQualityFact
 }
 
-func (i SkillQualityInput) ref() string { return i.FactRef }
-
 type ErrorInput struct {
 	FactRef string `json:"fact_ref"`
 	facts.ErrorFact
@@ -87,8 +85,6 @@ type ExampleInput struct {
 	FactRef string `json:"fact_ref"`
 	facts.CommandExample
 }
-
-func (i ExampleInput) ref() string { return i.FactRef }
 
 func BuildInputView(f facts.Facts) InputView {
 	selected := newInputSelection(f)
