@@ -271,6 +271,34 @@ func TestParseExampleUsesCommandTreeBeforeFlagValues(t *testing.T) {
 	}
 }
 
+func TestParseExampleAllowsKnownFlagsAfterPlaceholderValue(t *testing.T) {
+	m := manifest.Manifest{Commands: []manifest.Command{{
+		Path: "base +record-list",
+		Flags: []manifest.Flag{
+			{Name: "base-token", TakesValue: true},
+			{Name: "table-id", TakesValue: true},
+			{Name: "limit", TakesValue: true},
+			{Name: "dry-run"},
+		},
+	}}}
+	ex := skillscan.Example{
+		Raw:        "lark-cli base +record-list --base-token app123 --table-id tbl123 --limit 20 --dry-run",
+		SourceFile: "skills/lark-base/SKILL.md",
+		Line:       8,
+	}
+
+	diags, facts := CheckReferences(m, []skillscan.Example{ex})
+	if len(diags) != 0 {
+		t.Fatalf("valid base record-list example produced diagnostics: %#v", diags)
+	}
+	if facts[0].CommandPath != "base +record-list" {
+		t.Fatalf("command path = %q", facts[0].CommandPath)
+	}
+	if facts[0].ReferencesInvalidCommand {
+		t.Fatalf("valid record-list example should not be invalid")
+	}
+}
+
 func TestParseExampleAllowsFlagShorthandAndIgnoresPipelineTail(t *testing.T) {
 	m := manifest.Manifest{Commands: []manifest.Command{{
 		Path: "mail +message",
