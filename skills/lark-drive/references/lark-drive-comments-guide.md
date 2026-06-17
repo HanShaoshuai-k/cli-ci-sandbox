@@ -24,6 +24,9 @@ lark-cli drive file.comments list --params '{"file_token":"xxx","file_type":"doc
 
 # 包含已解决评论：仅当用户明确要求时使用
 lark-cli drive file.comments list --params '{"file_token":"xxx","file_type":"docx"}'
+
+# 排查参数结构时，可以先看 dry-run 请求；注释不是命令参数
+lark-cli drive file.comments list --params '{"file_token":"xxx","file_type":"docx","is_solved":false}' # inspect --comment-kind docx first
 ```
 
 ## 评论卡片与统计
