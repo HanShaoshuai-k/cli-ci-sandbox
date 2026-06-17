@@ -2344,6 +2344,13 @@ func validateSendTime(runtime *common.RuntimeContext) error {
 	if !runtime.Bool("confirm-send") {
 		return mailValidationParamError("--send-time", "--send-time requires --confirm-send to be set")
 	}
+	return validateSendTimeValue(sendTime)
+}
+
+func validateSendTimeValue(sendTime string) error {
+	if sendTime == "" {
+		return nil
+	}
 	ts, err := strconv.ParseInt(sendTime, 10, 64)
 	if err != nil {
 		return mailValidationParamError("--send-time", "--send-time must be a valid Unix timestamp in seconds, got %q", sendTime).WithCause(err)

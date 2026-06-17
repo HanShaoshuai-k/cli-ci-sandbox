@@ -10,6 +10,7 @@ import (
 
 	"github.com/larksuite/cli/errs"
 	"github.com/larksuite/cli/shortcuts/common"
+	draftpkg "github.com/larksuite/cli/shortcuts/mail/draft"
 )
 
 // MaxBatchSendDrafts caps the number of draft IDs accepted in a single
@@ -99,6 +100,8 @@ var MailDraftSend = common.Shortcut{
 			Desc: "Stop at the first recoverable per-draft failure (default: continue and aggregate). " +
 				"Fatal errors (auth, permission, network, mailbox-level quota) always abort immediately " +
 				"regardless of this flag."},
+		{Name: "send-time",
+			Desc: "Scheduled send time as a Unix timestamp in seconds. Must be at least 5 minutes in the future."},
 	},
 	Validate: validateDraftSend,
 	DryRun:   dryRunDraftSend,
@@ -130,14 +133,12 @@ func executeDraftSend(ctx context.Context, rt *common.RuntimeContext) error {
 
 	out := batchSendOutput{MailboxID: mailboxID, Total: len(draftIDs)}
 	stopOnErr := rt.Bool("stop-on-error")
+	sendTime := rt.Str("send-time")
 	for i, id := range draftIDs {
 		idx := i + 1
 		writeDraftSendProgressf(rt, "[%d/%d] sending draft %s",
 			idx, len(draftIDs), sanitizeForSingleLine(id))
-		// Direct CallAPITyped rather than draftpkg.Send: this shortcut never sends
-		// a body, so the helper's send_time-aware envelope would add no value.
-		data, err := rt.CallAPITyped("POST",
-			mailboxPath(mailboxID, "drafts", id, "send"), nil, nil)
+		data, err := draftpkg.Send(rt, mailboxID, id, sendTime)
 		if err != nil {
 			if isFatalSendErr(err) {
 				writeDraftSendProgressf(rt, "[%d/%d] aborting after draft %s: %s",
@@ -207,17 +208,23 @@ func executeDraftSend(ctx context.Context, rt *common.RuntimeContext) error {
 func dryRunDraftSend(ctx context.Context, rt *common.RuntimeContext) *common.DryRunAPI {
 	mailboxID := resolveComposeMailboxID(rt)
 	draftIDs, _ := normalizedDraftSendIDs(rt)
+	sendTime := rt.Str("send-time")
 	api := common.NewDryRunAPI().Desc(fmt.Sprintf(
 		"Send %d existing drafts sequentially", len(draftIDs)))
 	for _, id := range draftIDs {
 		api = api.POST(mailboxPath(mailboxID, "drafts", id, "send"))
+		if sendTime != "" {
+			api = api.Body(map[string]interface{}{"send_time": sendTime})
+		}
 	}
 	return api
 }
 
 func validateDraftSend(ctx context.Context, rt *common.RuntimeContext) error {
-	_, err := normalizedDraftSendIDs(rt)
-	return err
+	if _, err := normalizedDraftSendIDs(rt); err != nil {
+		return err
+	}
+	return validateSendTimeValue(rt.Str("send-time"))
 }
 
 func normalizedDraftSendIDs(rt *common.RuntimeContext) ([]string, error) {

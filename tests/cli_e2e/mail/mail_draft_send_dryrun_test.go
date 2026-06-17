@@ -48,6 +48,33 @@ func TestMail_DraftSendDryRun(t *testing.T) {
 	}
 }
 
+func TestMail_DraftSendDryRunScheduled(t *testing.T) {
+	setMailDraftSendDryRunEnv(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	t.Cleanup(cancel)
+
+	result, err := clie2e.RunCmd(ctx, clie2e.Request{
+		Args: []string{
+			"mail", "+draft-send",
+			"--mailbox", "alias@example.com",
+			"--draft-id", " draft_001, draft_002 ",
+			"--send-time", "4102444800",
+			"--dry-run",
+		},
+		DefaultAs: "user",
+	})
+	require.NoError(t, err)
+	result.AssertExitCode(t, 0)
+
+	assert.Equal(t, int64(2), gjson.Get(result.Stdout, "api.#").Int(), "stdout:\n%s", result.Stdout)
+	for i := 0; i < 2; i++ {
+		idx := strconv.Itoa(i)
+		assert.Equal(t, "POST", gjson.Get(result.Stdout, "api."+idx+".method").String(), "stdout:\n%s", result.Stdout)
+		assert.Equal(t, "4102444800", gjson.Get(result.Stdout, "api."+idx+".body.send_time").String(), "stdout:\n%s", result.Stdout)
+	}
+}
+
 func TestMail_DraftSendDryRunValidation(t *testing.T) {
 	setMailDraftSendDryRunEnv(t)
 

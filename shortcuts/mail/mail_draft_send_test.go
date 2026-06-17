@@ -20,7 +20,7 @@ import (
 )
 
 // TestMailDraftSend_Metadata pins the public surface of the +draft-send
-// shortcut: command name, risk level, scopes, auth type, and the three
+// shortcut: command name, risk level, scopes, auth type, and the four
 // declared flags. Changing any of these is a public-contract change and must
 // be intentional.
 func TestMailDraftSend_Metadata(t *testing.T) {
@@ -78,6 +78,16 @@ func TestMailDraftSend_Metadata(t *testing.T) {
 	}
 	if stopOnErr.Type != "bool" {
 		t.Errorf("--stop-on-error Type = %q, want %q", stopOnErr.Type, "bool")
+	}
+	sendTime, ok := flagByName["send-time"]
+	if !ok {
+		t.Fatal("missing --send-time flag")
+	}
+	if sendTime.Required {
+		t.Error("--send-time must be optional")
+	}
+	if sendTime.Type != "" {
+		t.Errorf("--send-time Type = %q, want default string type", sendTime.Type)
 	}
 }
 
@@ -168,6 +178,40 @@ func TestMailDraftSend_AllSuccess(t *testing.T) {
 	first := sent[0].(map[string]interface{})
 	if first["draft_id"] != "d1" || first["message_id"] != "msg_1" || first["thread_id"] != "thread_1" {
 		t.Errorf("first sent entry shape unexpected: %#v", first)
+	}
+}
+
+// TestMailDraftSend_SendTimePassesBody verifies scheduled sends pass the same
+// send_time body to every draft send request in the batch.
+func TestMailDraftSend_SendTimePassesBody(t *testing.T) {
+	f, stdout, _, reg := mailShortcutTestFactory(t)
+	first := stubDraftSend(reg, "d1", map[string]interface{}{
+		"code": 0,
+		"data": map[string]interface{}{"message_id": "msg_1"},
+	})
+	second := stubDraftSend(reg, "d2", map[string]interface{}{
+		"code": 0,
+		"data": map[string]interface{}{"message_id": "msg_2"},
+	})
+
+	err := runMountedMailShortcut(t, MailDraftSend, []string{
+		"+draft-send",
+		"--draft-id", "d1,d2",
+		"--send-time", "4102444800",
+		"--yes",
+	}, f, stdout)
+	if err != nil {
+		t.Fatalf("expected nil err on scheduled send, got %v", err)
+	}
+
+	for _, stub := range []*httpmock.Stub{first, second} {
+		var body map[string]interface{}
+		if err := json.Unmarshal(stub.CapturedBody, &body); err != nil {
+			t.Fatalf("unmarshal request body %q failed: %v", string(stub.CapturedBody), err)
+		}
+		if body["send_time"] != "4102444800" {
+			t.Errorf("send_time body = %#v, want 4102444800", body)
+		}
 	}
 }
 
@@ -559,6 +603,16 @@ func TestMailDraftSend_ValidateErrors(t *testing.T) {
 			args:    []string{"+draft-send", "--draft-id", "d1,d2,d1", "--yes"},
 			wantSub: "--draft-id contains duplicate value: d1",
 		},
+		{
+			name:    "invalid send time",
+			args:    []string{"+draft-send", "--draft-id", "d1", "--send-time", "soon", "--yes"},
+			wantSub: "--send-time must be a valid Unix timestamp in seconds",
+		},
+		{
+			name:    "too soon send time",
+			args:    []string{"+draft-send", "--draft-id", "d1", "--send-time", "1", "--yes"},
+			wantSub: "--send-time must be at least 5 minutes in the future",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -748,6 +802,7 @@ func runtimeForMailDraftSendTest(t *testing.T, strFlags map[string]string, draft
 	cmd.Flags().String("mailbox", "", "")
 	cmd.Flags().StringSlice("draft-id", nil, "")
 	cmd.Flags().Bool("stop-on-error", false, "")
+	cmd.Flags().String("send-time", "", "")
 	if err := cmd.ParseFlags(nil); err != nil {
 		t.Fatalf("parse flags failed: %v", err)
 	}
