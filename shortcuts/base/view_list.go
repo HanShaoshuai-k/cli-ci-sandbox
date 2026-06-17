@@ -10,7 +10,7 @@ import (
 )
 
 var BaseViewList = common.Shortcut{
-	Service:     "base",
+	Service:"base",
 	Command:     "+view-list",
 	Description: "List views in a table",
 	Risk:        "read",
