@@ -34,7 +34,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// RuntimeContext provides helpers for shortcut execution.
+// RuntimeContext provides shortcut execution helpers.
 type RuntimeContext struct {
 	ctx           context.Context // from cmd.Context(), propagated through the call chain
 	Config        *core.CliConfig
