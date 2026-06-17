@@ -103,7 +103,9 @@ var CalendarCreate = common.Shortcut{
 					continue
 				}
 				if !strings.HasPrefix(id, "ou_") && !strings.HasPrefix(id, "oc_") && !strings.HasPrefix(id, "omm_") {
-					return errs.NewValidationError(errs.SubtypeInvalidArgument, "invalid attendee id format %q: should start with 'ou_', 'oc_', or 'omm_'", id).WithParam("--attendee-ids")
+					return errs.NewValidationError(errs.SubtypeInvalidArgument, "invalid attendee id format %q: should start with 'ou_', 'oc_', or 'omm_'", id).
+						WithParam("--attendee-ids").
+						WithHint("invalid attendee id format")
 				}
 			}
 		}
