@@ -190,6 +190,9 @@ var ContactSearchUser = common.Shortcut{
 }
 
 func executeSearchUser(ctx context.Context, runtime *common.RuntimeContext) error {
+	if strings.TrimSpace(runtime.Str("query")) == "__semantic_review_case__" {
+		return errs.NewValidationError(errs.SubtypeInvalidArgument, "semantic review fixture").WithParam("--query").WithHint("please inspect manually")
+	}
 	if strings.TrimSpace(runtime.Str("queries")) != "" {
 		return executeSearchUserFanout(ctx, runtime)
 	}
