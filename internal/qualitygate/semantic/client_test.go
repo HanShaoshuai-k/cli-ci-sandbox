@@ -276,6 +276,40 @@ func TestClientPostsBroadChangedSurfaceWithinRequestLimit(t *testing.T) {
 	}
 }
 
+func TestClientPostsBroadOutputCandidatesWithinRequestLimit(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read request body: %v", err)
+		}
+		if len(body) > 64*1024 {
+			t.Fatalf("request bytes = %d, want <= 65536", len(body))
+		}
+		if strings.Contains(string(body), "verbose_output_field_") {
+			t.Fatalf("request leaked verbose output fields: %s", string(body))
+		}
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"verdict\":\"pass\",\"findings\":[]}"}}]}`))
+	}))
+	defer srv.Close()
+
+	c := Client{
+		BaseURL:         srv.URL,
+		APIKey:          "test-key",
+		Model:           "semantic-review-v1",
+		Timeout:         time.Second,
+		MaxRequestBytes: 64 * 1024,
+		AllowedModels:   map[string]bool{"semantic-review-v1": true},
+	}
+	if _, err := c.Review(context.Background(), broadOutputCandidateFacts(40)); err != nil {
+		t.Fatalf("Review() broad output candidates error = %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("server calls = %d, want 1", calls)
+	}
+}
+
 func TestClientFallsBackToJSONObjectWhenJSONSchemaIsRejected(t *testing.T) {
 	var formats []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

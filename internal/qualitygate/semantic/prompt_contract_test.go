@@ -84,8 +84,8 @@ func TestBuildInputViewSelectsChangedReviewCandidatesWithStableRefs(t *testing.T
 	if got := singleRef(t, view.Errors); got != "facts.errors[1]" {
 		t.Fatalf("error ref = %q, want facts.errors[1]", got)
 	}
-	if got := singleRef(t, view.Outputs); got != "facts.outputs[1]" {
-		t.Fatalf("output ref = %q, want facts.outputs[1]", got)
+	if len(view.Outputs) != 0 {
+		t.Fatalf("outputs len = %d, want 0 without reject diagnostics", len(view.Outputs))
 	}
 	if len(view.Examples) != 0 {
 		t.Fatalf("examples len = %d, want 0 without diagnostics", len(view.Examples))
