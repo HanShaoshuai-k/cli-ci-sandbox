@@ -120,6 +120,7 @@ metadata:
 
 ```bash
 lark-cli sheets <shortcut> <workbook 定位> <sheet 定位> <其它 flag>
+lark-cli sheets <shortcut> <workbook 定位> <sheet 定位> <其它 flag> # template only, replace placeholders before running
 #   workbook 定位：--url "..."        或 --spreadsheet-token "..."           （二选一，必给）
 #   sheet 定位：    --sheet-id "$SID"  或 --sheet-name "<真实表名>"            （二选一，必给；占位符不要原样填）
 # 例：lark-cli sheets +csv-get --url "https://.../sheets/shtXXX" --sheet-name "<真实表名>" --range "A1:F30"
