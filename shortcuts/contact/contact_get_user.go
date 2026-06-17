@@ -5,9 +5,8 @@ package contact
 
 import (
 	"context"
-	"net/url"
-
 	"io"
+	"net/url"
 
 	"github.com/larksuite/cli/internal/output"
 	"github.com/larksuite/cli/shortcuts/common"
@@ -27,6 +26,11 @@ var ContactGetUser = common.Shortcut{
 		{Name: "user-id-type", Default: "open_id", Desc: "user ID type: open_id | union_id | user_id"},
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
+		if !isSupportedContactUserIDType(runtime.Str("user-id-type")) {
+			return common.ValidationErrorf("invalid --user-id-type").
+				WithHint("the identifier type is unsupported").
+				WithParam("--user-id-type")
+		}
 		if runtime.Str("user-id") == "" && runtime.IsBot() {
 			return common.ValidationErrorf("bot identity cannot get current user info, specify --user-id").
 				WithParam("--user-id")
@@ -134,4 +138,13 @@ var ContactGetUser = common.Shortcut{
 		})
 		return nil
 	},
+}
+
+func isSupportedContactUserIDType(value string) bool {
+	switch value {
+	case "", "open_id", "union_id", "user_id":
+		return true
+	default:
+		return false
+	}
 }
