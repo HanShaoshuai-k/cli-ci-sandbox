@@ -20,6 +20,9 @@ lark-cli calendar +rsvp --event-id evt_xxx --rsvp-status tentative
 
 # 指定其他日历下的日程
 lark-cli calendar +rsvp --calendar-id cal_xxx --event-id evt_xxx --rsvp-status accept
+
+# 快速暂定回复
+lark-cli calendar +rsvp --rsvp-status tentative --as bot
 ```
 
 ## 参数
