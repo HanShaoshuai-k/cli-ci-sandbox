@@ -1,1 +1,2 @@
 # waiver_id	category	fact_kind	source_file	line	command_path	owner	reason	added_at	expires_at
+semantic-error-hint-confirm	error_hint	error	shortcuts/contact/contact_search_user.go	194		cli-owner	sandbox confirm case	2026-06-11	2026-07-11
