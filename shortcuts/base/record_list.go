@@ -24,6 +24,7 @@ var BaseRecordList = common.Shortcut{
 		recordListViewRefFlag(),
 		recordFilterFlag(),
 		recordSortFlag(),
+		{Name: "include-automatic-fields", Type: "bool", Desc: "include Base automatic fields such as Created By and Modified Time"},
 		{Name: "offset", Type: "int", Default: "0", Desc: "pagination offset"},
 		{Name: "limit", Type: "int", Default: "100", Desc: "pagination size, range 1-200"},
 		pageSizeLimitAliasFlag(),
@@ -32,6 +33,7 @@ var BaseRecordList = common.Shortcut{
 	Tips: []string{
 		"Example: lark-cli base +record-list --base-token <base_token> --table-id <table_id> --limit 50",
 		"Example with projection: lark-cli base +record-list --base-token <base_token> --table-id <table_id> --field-id Name --field-id Status --limit 50",
+		"Example with automatic fields: lark-cli base +record-list --base-token <base_token> --table-id <table_id> --include-automatic-fields --limit 50",
 		`Text equality filter: --filter-json '{"logic":"and","conditions":[["Title","==","Launch plan"]]}'`,
 		`Text contains/like filter: --filter-json '{"logic":"and","conditions":[["Title","intersects","urgent"]]}'`,
 		`Number equality filter: --filter-json '{"logic":"and","conditions":[["Score","==",95]]}'`,

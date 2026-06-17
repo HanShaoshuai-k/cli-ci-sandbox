@@ -136,6 +136,14 @@ func TestDryRunRecordOps(t *testing.T) {
 	)
 	assertDryRunContains(t, dryRunRecordList(ctx, commaFieldRT), "limit=1", "offset=0", "field_id=A%2CB", "field_id=C")
 
+	automaticFieldsRT := newBaseTestRuntimeWithArrays(
+		map[string]string{"base-token": "app_x", "table-id": "tbl_1"},
+		nil,
+		map[string]bool{"include-automatic-fields": true},
+		map[string]int{"limit": 10},
+	)
+	assertDryRunContains(t, dryRunRecordList(ctx, automaticFieldsRT), "limit=10", "offset=0", "automatic_fields=true")
+
 	searchRT := newBaseTestRuntime(
 		map[string]string{
 			"base-token": "app_x",

@@ -1253,6 +1253,30 @@ func TestBaseRecordExecuteReadCreateDelete(t *testing.T) {
 		}
 	})
 
+	t.Run("list with automatic fields", func(t *testing.T) {
+		factory, stdout, reg := newExecuteFactory(t)
+		reg.Register(&httpmock.Stub{
+			Method: "GET",
+			URL:    "automatic_fields=true&limit=10&offset=0",
+			Body: map[string]interface{}{
+				"code": 0,
+				"data": map[string]interface{}{
+					"fields":         []interface{}{"Name", "Created By"},
+					"field_id_list":  []interface{}{"fld_name", "fld_created_by"},
+					"record_id_list": []interface{}{"rec_auto"},
+					"data":           []interface{}{[]interface{}{"Alice", "ou_1"}},
+					"total":          1,
+				},
+			},
+		})
+		if err := runShortcut(t, BaseRecordList, []string{"+record-list", "--base-token", "app_x", "--table-id", "tbl_x", "--limit", "10", "--include-automatic-fields", "--format", "json"}, factory, stdout); err != nil {
+			t.Fatalf("err=%v", err)
+		}
+		if got := stdout.String(); !strings.Contains(got, `"fld_created_by"`) || !strings.Contains(got, `"rec_auto"`) {
+			t.Fatalf("stdout=%s", got)
+		}
+	})
+
 	t.Run("list json format", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
 		reg.Register(&httpmock.Stub{
