@@ -95,6 +95,14 @@ metadata:
 6. 一次性原始记录查询优先用 `+record-list` / `+record-search` 的 filter/sort；聚合分析优先用 `+data-query`；要把结果长期显示在表里，才考虑新增 `formula` / `lookup` 字段。
 7. `+data-query` 可返回聚合结果或维度字段行，但维度行按字段组合去重且不返回 `record_id`；需要逐条记录、记录定位或完整行级字段时，再用 `+record-list` / `+record-search` / `+record-get` 回查。
 
+### 视图抽样排障
+
+当用户只想确认某个表的视图结构时，可以先取少量视图做抽样：
+
+```bash
+lark-cli base +view-list --table-id <table_id> --limit 20 --as bot
+```
+
 ## 写入前置规则
 
 - 写记录前先读字段结构；只写存储字段。系统字段、附件字段、`formula`、`lookup` 不作为普通记录写入目标。
