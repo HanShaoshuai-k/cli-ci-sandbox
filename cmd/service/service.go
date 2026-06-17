@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// RegisterServiceCommands registers all service commands from from_meta specs.
+// RegisterServiceCommands registers service commands from from_meta specs.
 func RegisterServiceCommands(parent *cobra.Command, f *cmdutil.Factory) {
 	RegisterServiceCommandsWithContext(context.Background(), parent, f)
 }
