@@ -43,6 +43,7 @@ type triageFilter struct {
 const (
 	searchPageMax    = 15 // max items per search API page
 	listPageMax      = 20 // max items per list API page
+	triageBatchMax   = 20
 	triageMaxLimit   = 400
 	triageAPIRetries = 2 // retry count in addition to the first attempt
 )
@@ -58,6 +59,7 @@ var MailTriage = common.Shortcut{
 		{Name: "format", Default: "table", Desc: "output format: table | json | data (json/data output object with pagination fields)"},
 		{Name: "max", Type: "int", Default: "20", Desc: "maximum number of messages to fetch (1-400; auto-paginates internally)"},
 		{Name: "page-size", Type: "int", Desc: "alias for --max"},
+		{Name: "batch_size", Type: "int", Default: "20", Desc: "metadata batch_get size (1-20)"},
 		{Name: "page-token", Desc: "pagination token from a previous response to fetch the next page"},
 		{Name: "filter", Desc: `exact-match condition filter (JSON). Narrow results by folder, label, sender, recipient, etc. Run --print-filter-schema to see all fields. Example: {"folder":"INBOX","from":["alice@example.com"]}`},
 		{Name: "mailbox", Default: "me", Desc: "email address (default: me)"},
@@ -151,6 +153,7 @@ var MailTriage = common.Shortcut{
 			return err
 		}
 		maxCount := resolveTriagePageSize(runtime)
+		batchSize := resolveTriageBatchSize(runtime)
 		parsed, err := parseTriagePageToken(runtime.Str("page-token"))
 		if err != nil {
 			return err
@@ -209,7 +212,7 @@ var MailTriage = common.Shortcut{
 				for i, m := range messages {
 					messageIDs[i] = strVal(m["message_id"])
 				}
-				enriched, err := fetchMessageMetas(runtime, mailbox, messageIDs)
+				enriched, err := fetchMessageMetas(runtime, mailbox, messageIDs, batchSize)
 				if err != nil {
 					return err
 				}
@@ -256,7 +259,7 @@ var MailTriage = common.Shortcut{
 			if len(messageIDs) > maxCount {
 				messageIDs = messageIDs[:maxCount]
 			}
-			messages, err = fetchMessageMetas(runtime, mailbox, messageIDs)
+			messages, err = fetchMessageMetas(runtime, mailbox, messageIDs, batchSize)
 			if err != nil {
 				return err
 			}
@@ -485,14 +488,16 @@ func usesTriageSearchPath(query string, filter triageFilter) bool {
 	return false
 }
 
-func fetchMessageMetas(runtime *common.RuntimeContext, mailbox string, messageIDs []string) ([]map[string]interface{}, error) {
+func fetchMessageMetas(runtime *common.RuntimeContext, mailbox string, messageIDs []string, batchSize int) ([]map[string]interface{}, error) {
 	if len(messageIDs) == 0 {
 		return nil, nil
 	}
-	const maxBatchGetIDs = 20
+	if batchSize <= 0 || batchSize > triageBatchMax {
+		batchSize = triageBatchMax
+	}
 	byID := make(map[string]map[string]interface{}, len(messageIDs))
-	for start := 0; start < len(messageIDs); start += maxBatchGetIDs {
-		end := start + maxBatchGetIDs
+	for start := 0; start < len(messageIDs); start += batchSize {
+		end := start + batchSize
 		if end > len(messageIDs) {
 			end = len(messageIDs)
 		}
@@ -1010,6 +1015,17 @@ func normalizeTriageMax(maxCount int) int {
 		return triageMaxLimit
 	}
 	return maxCount
+}
+
+func resolveTriageBatchSize(runtime *common.RuntimeContext) int {
+	size := runtime.Int("batch_size")
+	if size <= 0 {
+		return triageBatchMax
+	}
+	if size > triageBatchMax {
+		return triageBatchMax
+	}
+	return size
 }
 
 func resolveSearchFolderFilter(runtime *common.RuntimeContext, mailboxID string, f triageFilter, dryRun bool) (string, error) {

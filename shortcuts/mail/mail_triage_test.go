@@ -1604,6 +1604,38 @@ func TestMailTriageMissingMessageMetadataStillGetsMailboxID(t *testing.T) {
 	}
 }
 
+func TestMailTriageBatchSizeSplitsMetadataFetch(t *testing.T) {
+	f, stdout, _, reg := mailShortcutTestFactory(t)
+	defer reg.Verify(t)
+
+	registerMailTriageListStub(reg, "me", []string{"msg_001", "msg_002", "msg_003"}, false, "")
+	registerMailTriageBatchStubForIDs(reg, "me", []string{"msg_001", "msg_002"}, []map[string]interface{}{
+		mailTriageBatchMessage("msg_001", "First"),
+		mailTriageBatchMessage("msg_002", "Second"),
+	})
+	registerMailTriageBatchStubForIDs(reg, "me", []string{"msg_003"}, []map[string]interface{}{
+		mailTriageBatchMessage("msg_003", "Third"),
+	})
+
+	err := runMountedMailShortcut(t, MailTriage, []string{
+		"+triage",
+		"--format", "json",
+		"--filter", `{"folder_id":"INBOX"}`,
+		"--batch_size", "2",
+	}, f, stdout)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	messages := mailTriageMessagesFromOutput(t, decodeMailTriageJSONOutput(t, stdout))
+	if len(messages) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(messages))
+	}
+	if messages[2]["message_id"] != "msg_003" {
+		t.Fatalf("third message mismatch: %#v", messages[2])
+	}
+}
+
 func TestMailTriageTableOutputPreservesMailboxContext(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -1699,6 +1731,10 @@ func registerMailTriageListStub(reg *httpmock.Registry, mailbox string, items []
 }
 
 func registerMailTriageBatchStub(reg *httpmock.Registry, mailbox string, messages []map[string]interface{}) {
+	registerMailTriageBatchStubForIDs(reg, mailbox, nil, messages)
+}
+
+func registerMailTriageBatchStubForIDs(reg *httpmock.Registry, mailbox string, wantIDs []string, messages []map[string]interface{}) {
 	rawMessages := make([]interface{}, 0, len(messages))
 	for _, msg := range messages {
 		rawMessages = append(rawMessages, msg)
@@ -1706,6 +1742,9 @@ func registerMailTriageBatchStub(reg *httpmock.Registry, mailbox string, message
 	reg.Register(&httpmock.Stub{
 		Method: "POST",
 		URL:    mailboxPath(mailbox, "messages", "batch_get"),
+		BodyFilter: func(body []byte) bool {
+			return bodyHasMessageIDs(body, wantIDs)
+		},
 		Body: map[string]interface{}{
 			"code": 0,
 			"data": map[string]interface{}{
@@ -1713,6 +1752,27 @@ func registerMailTriageBatchStub(reg *httpmock.Registry, mailbox string, message
 			},
 		},
 	})
+}
+
+func bodyHasMessageIDs(body []byte, wantIDs []string) bool {
+	if wantIDs == nil {
+		return true
+	}
+	var got struct {
+		MessageIDs []string `json:"message_ids"`
+	}
+	if err := json.Unmarshal(body, &got); err != nil {
+		return false
+	}
+	if len(got.MessageIDs) != len(wantIDs) {
+		return false
+	}
+	for i := range wantIDs {
+		if got.MessageIDs[i] != wantIDs[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func registerMailTriageSearchStub(reg *httpmock.Registry, mailbox string, items []interface{}, hasMore bool, pageToken string) {
