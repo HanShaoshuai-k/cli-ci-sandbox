@@ -370,7 +370,7 @@ func TestDryRunViewOps(t *testing.T) {
 	ctx := context.Background()
 
 	listRT := newBaseTestRuntime(
-		map[string]string{"base-token": "app_x", "table-id": "tbl_1", "view-id": "viw_1"},
+		map[string]string{"base-token": "app_x", "table-id": "tbl_1", "view-id": "viw_1", "type": "grid"},
 		nil,
 		map[string]int{"offset": -1, "limit": 200},
 	)

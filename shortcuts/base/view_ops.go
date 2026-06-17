@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/larksuite/cli/shortcuts/common"
 )
@@ -159,11 +160,25 @@ func executeViewList(runtime *common.RuntimeContext) error {
 	if err != nil {
 		return err
 	}
+	if viewType := strings.TrimSpace(runtime.Str("type")); viewType != "" {
+		views = filterViewsByType(views, viewType)
+		total = len(views)
+	}
 	if total == 0 {
 		total = len(views)
 	}
 	runtime.Out(map[string]interface{}{"views": views, "total": total}, nil)
 	return nil
+}
+
+func filterViewsByType(views []map[string]interface{}, viewType string) []map[string]interface{} {
+	var out []map[string]interface{}
+	for _, view := range views {
+		if strings.EqualFold(fmt.Sprint(view["type"]), viewType) {
+			out = append(out, view)
+		}
+	}
+	return out
 }
 
 func executeViewGet(runtime *common.RuntimeContext) error {

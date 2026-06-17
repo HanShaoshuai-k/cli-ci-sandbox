@@ -1066,6 +1066,31 @@ func TestBaseFieldExecuteCRUD(t *testing.T) {
 		}
 	})
 
+	t.Run("list filters by type", func(t *testing.T) {
+		factory, stdout, reg := newExecuteFactory(t)
+		reg.Register(&httpmock.Stub{
+			Method: "GET",
+			URL:    "limit=3&offset=0",
+			Body: map[string]interface{}{
+				"code": 0,
+				"data": map[string]interface{}{
+					"views": []interface{}{
+						map[string]interface{}{"id": "vew_1", "name": "Main", "type": "grid"},
+						map[string]interface{}{"id": "vew_2", "name": "Signup", "type": "form"},
+					},
+					"total": 2,
+				},
+			},
+		})
+		if err := runShortcut(t, BaseViewList, []string{"+view-list", "--base-token", "app_x", "--table-id", "tbl_x", "--limit", "3", "--type", "grid"}, factory, stdout); err != nil {
+			t.Fatalf("err=%v", err)
+		}
+		got := stdout.String()
+		if !strings.Contains(got, `"total": 1`) || !strings.Contains(got, `"Main"`) || strings.Contains(got, `"Signup"`) {
+			t.Fatalf("stdout=%s", got)
+		}
+	})
+
 	t.Run("get", func(t *testing.T) {
 		factory, stdout, reg := newExecuteFactory(t)
 		reg.Register(&httpmock.Stub{
