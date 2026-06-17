@@ -5,6 +5,7 @@ package semantic
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -12,15 +13,17 @@ import (
 	"github.com/larksuite/cli/internal/qualitygate/report"
 )
 
-func TestInputViewKeepsChangedFactsWithOriginalRefs(t *testing.T) {
+func TestInputViewKeepsChangedReviewCandidatesWithOriginalRefs(t *testing.T) {
 	f := facts.Facts{
 		SchemaVersion: 1,
 		Commands: []facts.CommandFact{
 			{Path: "old noisy command", Source: "shortcut"},
+			{Path: "docs +clean", Changed: true, Source: "shortcut"},
 			{Path: "docs +fetch", Changed: true, Source: "shortcut", NameConflictsExisting: true},
 		},
 		Skills: []facts.SkillFact{
 			{SourceFile: "skills/lark-old/SKILL.md", Line: 3, Raw: "old noisy skill"},
+			{SourceFile: "skills/lark-doc/SKILL.md", Line: 8, Raw: "changed clean skill", Changed: true},
 			{SourceFile: "skills/lark-doc/SKILL.md", Line: 9, Raw: "changed skill", Changed: true, ReferencesInvalidCommand: true},
 		},
 		SkillQuality: []facts.SkillQualityFact{
@@ -29,10 +32,12 @@ func TestInputViewKeepsChangedFactsWithOriginalRefs(t *testing.T) {
 		},
 		Errors: []facts.ErrorFact{
 			{File: "old.go", Line: 10, Boundary: true, RequiredHint: true},
+			{File: "cmd/docs.go", Line: 19, Changed: true, Boundary: true, RequiredHint: true, HintActionCount: 1},
 			{File: "cmd/docs.go", Line: 20, Changed: true, Boundary: true, RequiredHint: true},
 		},
 		Outputs: []facts.OutputFact{
 			{Command: "old list", IsList: true},
+			{Command: "docs clean-list", Changed: true, IsList: true, HasDefaultLimit: true, HasDecisionField: true},
 			{Command: "docs list", Changed: true, IsList: true},
 		},
 		Examples: []facts.CommandExample{
@@ -42,31 +47,70 @@ func TestInputViewKeepsChangedFactsWithOriginalRefs(t *testing.T) {
 	}
 
 	view := BuildInputView(f)
-	if got := singleRef(t, view.Commands); got != "facts.commands[1]" {
-		t.Fatalf("command ref = %q, want facts.commands[1]", got)
+	if got := singleRef(t, view.Commands); got != "facts.commands[2]" {
+		t.Fatalf("command ref = %q, want facts.commands[2]", got)
 	}
-	if got := singleRef(t, view.Skills); got != "facts.skills[1]" {
-		t.Fatalf("skill ref = %q, want facts.skills[1]", got)
+	if got := singleRef(t, view.Skills); got != "facts.skills[2]" {
+		t.Fatalf("skill ref = %q, want facts.skills[2]", got)
 	}
-	if got := singleRef(t, view.SkillQuality); got != "facts.skill_quality[1]" {
-		t.Fatalf("skill quality ref = %q, want facts.skill_quality[1]", got)
+	if len(view.SkillQuality) != 0 {
+		t.Fatalf("skill quality len = %d, want 0 without diagnostics", len(view.SkillQuality))
 	}
-	if got := singleRef(t, view.Errors); got != "facts.errors[1]" {
-		t.Fatalf("error ref = %q, want facts.errors[1]", got)
+	if got := singleRef(t, view.Errors); got != "facts.errors[2]" {
+		t.Fatalf("error ref = %q, want facts.errors[2]", got)
 	}
-	if got := singleRef(t, view.Outputs); got != "facts.outputs[1]" {
-		t.Fatalf("output ref = %q, want facts.outputs[1]", got)
+	if got := singleRef(t, view.Outputs); got != "facts.outputs[2]" {
+		t.Fatalf("output ref = %q, want facts.outputs[2]", got)
 	}
-	if got := singleRef(t, view.Examples); got != "facts.examples[1]" {
-		t.Fatalf("example ref = %q, want facts.examples[1]", got)
+	if len(view.Examples) != 0 {
+		t.Fatalf("examples len = %d, want 0 without diagnostics", len(view.Examples))
 	}
 
 	data, err := json.Marshal(view)
 	if err != nil {
 		t.Fatalf("marshal view: %v", err)
 	}
-	if strings.Contains(string(data), "old noisy") {
-		t.Fatalf("view leaked unchanged noisy facts: %s", data)
+	for _, forbidden := range []string{"old noisy", "docs +clean", "changed clean skill", "docs clean-list"} {
+		if strings.Contains(string(data), forbidden) {
+			t.Fatalf("view leaked non-candidate fact %q: %s", forbidden, data)
+		}
+	}
+}
+
+func TestInputViewSummarizesBroadChangedCommandSurface(t *testing.T) {
+	f := broadChangedFacts(434, 44)
+
+	view := BuildInputView(f)
+	if view.ChangedSummary.Commands != 434 || view.ChangedSummary.Outputs != 44 {
+		t.Fatalf("changed summary = %#v", view.ChangedSummary)
+	}
+	if len(view.Commands) != 0 || len(view.Outputs) != 0 {
+		t.Fatalf("broad clean surface leaked details: commands=%d outputs=%d", len(view.Commands), len(view.Outputs))
+	}
+
+	messages := BuildPrompt(f)
+	if len(messages) != 2 {
+		t.Fatalf("messages len = %d, want 2", len(messages))
+	}
+	if got := len(messages[1].Content); got > 8192 {
+		t.Fatalf("prompt user content bytes = %d, want <= 8192", got)
+	}
+	if strings.Contains(messages[1].Content, "service command 433") {
+		t.Fatalf("prompt leaked broad command details: %s", messages[1].Content)
+	}
+}
+
+func TestInputViewKeepsSemanticCandidateInsideBroadChangedSurface(t *testing.T) {
+	f := broadChangedFacts(200, 20)
+	f.Commands[137].NameConflictsExisting = true
+	f.Outputs[11].HasDefaultLimit = false
+
+	view := BuildInputView(f)
+	if got := singleRef(t, view.Commands); got != "facts.commands[137]" {
+		t.Fatalf("command ref = %q, want facts.commands[137]", got)
+	}
+	if got := singleRef(t, view.Outputs); got != "facts.outputs[11]" {
+		t.Fatalf("output ref = %q, want facts.outputs[11]", got)
 	}
 }
 
@@ -196,6 +240,32 @@ func TestBuildPromptDescribesErrorHintRubric(t *testing.T) {
 			t.Fatalf("system prompt missing %q: %s", want, system)
 		}
 	}
+}
+
+func broadChangedFacts(commands, outputs int) facts.Facts {
+	f := facts.Facts{SchemaVersion: 1}
+	for i := 0; i < commands; i++ {
+		f.Commands = append(f.Commands, facts.CommandFact{
+			Path:    "service command " + strconv.Itoa(i),
+			Domain:  "service",
+			Changed: true,
+			Source:  "service",
+			Flags:   []string{"tenant_key", "page_token", "page_size", "user_id_type"},
+		})
+	}
+	for i := 0; i < outputs; i++ {
+		f.Outputs = append(f.Outputs, facts.OutputFact{
+			Command:          "service command " + strconv.Itoa(i),
+			Domain:           "service",
+			Changed:          true,
+			Source:           "service",
+			Fields:           []string{"items", "has_more", "page_token"},
+			IsList:           true,
+			HasDefaultLimit:  true,
+			HasDecisionField: true,
+		})
+	}
+	return f
 }
 
 type refItem interface {

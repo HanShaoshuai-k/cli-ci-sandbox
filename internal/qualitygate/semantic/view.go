@@ -86,7 +86,7 @@ func (i ExampleInput) ref() string { return i.FactRef }
 
 func BuildInputView(f facts.Facts) InputView {
 	selected := newInputSelection(f)
-	selected.addChangedFacts()
+	selected.addChangedReviewCandidates()
 
 	var viewDiagnostics []facts.DiagnosticFact
 	for _, diag := range f.Diagnostics {
@@ -115,37 +115,43 @@ func BuildInputView(f facts.Facts) InputView {
 	}
 }
 
-func (s *inputSelection) addChangedFacts() {
+func (s *inputSelection) addChangedReviewCandidates() {
 	for i, cmd := range s.f.Commands {
-		if cmd.Changed {
+		if cmd.Changed && commandReviewCandidate(cmd) {
 			s.commands[i] = true
 		}
 	}
 	for i, skill := range s.f.Skills {
-		if skill.Changed {
+		if skill.Changed && skillReviewCandidate(skill) {
 			s.skills[i] = true
 		}
 	}
-	for i, skill := range s.f.SkillQuality {
-		if skill.Changed {
-			s.skillQuality[i] = true
-		}
-	}
 	for i, errFact := range s.f.Errors {
-		if errFact.Changed {
+		if errFact.Changed && errorReviewCandidate(errFact) {
 			s.errors[i] = true
 		}
 	}
 	for i, output := range s.f.Outputs {
-		if output.Changed {
+		if output.Changed && outputReviewCandidate(output) {
 			s.outputs[i] = true
 		}
 	}
-	for i, example := range s.f.Examples {
-		if example.Changed {
-			s.examples[i] = true
-		}
-	}
+}
+
+func commandReviewCandidate(cmd facts.CommandFact) bool {
+	return cmd.NameConflictsExisting || cmd.FlagAliasConflict
+}
+
+func skillReviewCandidate(skill facts.SkillFact) bool {
+	return skill.ReferencesInvalidCommand
+}
+
+func errorReviewCandidate(errFact facts.ErrorFact) bool {
+	return errFact.Boundary && errFact.RequiredHint && errFact.HintActionCount == 0
+}
+
+func outputReviewCandidate(output facts.OutputFact) bool {
+	return output.IsList && (!output.HasDefaultLimit || !output.HasDecisionField)
 }
 
 type inputSelection struct {
