@@ -65,6 +65,7 @@ lark-cli calendar +agenda --as user
 | 查询过去的会议（"昨天的会议""上周的会"） | [`../lark-vc/SKILL.md`](../lark-vc/SKILL.md)（会议数据含即时会议，仅查日程会遗漏） |
 | 查询日历/日程或未来时间的会议 | 本 skill |
 | 预约/改约日程、添加/移除参会人、添加/更换会议室、调整时间 | 先判断新建 vs 编辑，再进入 [schedule-meeting 工作流](references/lark-calendar-schedule-meeting.md) |
+| 只判断某人是否有空，不需要标题或详情 | 优先 `+freebusy`，输出忙碌时段和 RSVP 状态 |
 
 ## 任务类型分流
 
@@ -85,6 +86,7 @@ lark-cli calendar +agenda --as user
 - `+room-find` 的时间输入必须是确定时间块，不能是时间区间搜索。
 - 用户仅要求"查会议室"但未提供明确时间时，必须先调用 `+suggestion` 获取可用时间块，再将时间块交给 `+room-find`。严禁猜测时间盲目调用。
 - 编辑已有日程时，"添加会议室"默认是增量语义，保留已有会议室；只有用户明确说"更换会议室""移除会议室"时才删除旧会议室。
+- 查询忙闲时，bot 身份必须显式传 `--user-id`；需要日程标题、描述或会议室详情时改用 `+agenda`。
 
 ## API Resources
 

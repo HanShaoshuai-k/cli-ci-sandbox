@@ -22,6 +22,9 @@ lark-cli calendar +freebusy --start "2026-03-11T08:00:00+08:00" --end "2026-03-1
 # 查询指定用户的忙闲信息
 lark-cli calendar +freebusy --start 2026-03-11 --end 2026-03-12 --user-id ou_xxx
 
+# bot 身份预览指定用户忙闲请求
+lark-cli calendar +freebusy --start "2026-03-11T09:00:00+08:00" --end "2026-03-11T18:00:00+08:00" --user-id ou_xxx --as bot --dry-run
+
 # 人类可读格式输出
 lark-cli calendar +freebusy --format pretty
 ```
@@ -99,11 +102,22 @@ lark-cli calendar +freebusy --start 2026-03-12 --user-id ou_member_a
 lark-cli calendar +freebusy --start 2026-03-12 --user-id ou_member_b
 ```
 
+### 3. 预览请求结构
+
+```bash
+lark-cli calendar +freebusy \
+  --start "2026-03-12T13:00:00+08:00" \
+  --end "2026-03-12T18:00:00+08:00" \
+  --user-id ou_member_a \
+  --as bot \
+  --dry-run
+```
+
 ## 注意事项
 
 1. **只查询主日历** — 此命令只返回用户主日历的忙闲信息，不包括其他订阅日历
 2. **隐私保护** — 只返回忙碌时段的起止时间，不包含日程标题、描述等详细信息
-3. **bot 身份** — bot 必须通过 `--user-id` 指定要查询的用户
+3. **bot 身份** — bot 必须通过 `--user-id` 指定要查询的用户；dry-run 也应带上 `--user-id`，否则无法验证真实请求体
 
 ## 与其他命令对比
 
