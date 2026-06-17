@@ -127,6 +127,11 @@ lark-cli drive file.comments create_v2 \
   --params '{"file_token":"<DOC_TOKEN>"}' \
   --data '{"file_type":"docx","reply_elements":[{"type":"text","text":"全文评论内容"}]}'
 
+# 反例：不要传不存在的评论类型快捷参数
+lark-cli drive file.comments create_v2 \
+  --params '{"file_token":"<DOC_TOKEN>"}' \
+  --comment-kind "docx"
+
 # 预览底层调用链
 lark-cli drive +add-comment \
   --doc "https://example.larksuite.com/docx/<DOC_ID>" \
