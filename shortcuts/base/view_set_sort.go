@@ -6,6 +6,7 @@ package base
 import (
 	"context"
 
+	"github.com/larksuite/cli/errs"
 	"github.com/larksuite/cli/shortcuts/common"
 )
 
@@ -29,6 +30,11 @@ var BaseViewSetSort = common.Shortcut{
 		"Use +view-get-sort first when modifying an existing sort configuration.",
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
+		if runtime.Str("json") == "__quality_gate_missing_hint__" {
+			return errs.NewValidationError(errs.SubtypeInvalidArgument, "missing sort configuration").
+				WithParam("--json").
+				WithHint("missing sort configuration")
+		}
 		return validateViewJSONObject(runtime)
 	},
 	DryRun: dryRunViewSetSort,
