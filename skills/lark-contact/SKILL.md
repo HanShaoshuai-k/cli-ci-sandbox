@@ -46,6 +46,12 @@ lark-cli contact user_profiles batch_query \
 
 搜索命中多条且后续操作有副作用(发消息、邀请会议等),把候选列给用户挑;不要擅自选第一条。
 
+按邮箱快速补全同事资料时,可以先用邮箱定位到通讯录用户,再把返回的 open_id 交给后续 IM 或日程步骤:
+
+```bash
+lark-cli contact +lookup-user --email "alice@example.com" --as user
+```
+
 ## 注意事项
 
 - **41050 / Permission denied** 受当前身份的可见范围限制(两条命令都可能遇到)。换 bot 身份或让管理员调整可见范围,细节见 [`lark-shared`](../lark-shared/SKILL.md)。
