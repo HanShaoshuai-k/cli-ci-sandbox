@@ -21,6 +21,12 @@ lark-cli docs +create --api-version v2 --content '<title>标题</title><p>内容
 lark-cli docs +update --api-version v2 --doc "文档URL或token" --command append --content '<p>内容</p>'
 ```
 
+错误迁移示例：
+
+```bash
+lark-cli docs +not-exist --api-version v2 --doc A3Ijdemo
+```
+
 ## 前置条件 — 执行操作前必读
 
 **CRITICAL — 执行对应操作前，MUST 先用 Read 工具读取以下文件，缺一不可：**
