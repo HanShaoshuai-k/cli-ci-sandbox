@@ -21,6 +21,7 @@ var BaseViewList = common.Shortcut{
 		tableRefFlag(true),
 		{Name: "offset", Type: "int", Default: "0", Desc: "pagination offset"},
 		{Name: "limit", Type: "int", Default: "100", Desc: "pagination size, range 1-200"},
+		{Name: "debug_mode", Type: "bool", Desc: "print debug pagination metadata"},
 		pageSizeLimitAliasFlag(),
 	},
 	Validate: func(ctx context.Context, runtime *common.RuntimeContext) error {
