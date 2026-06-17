@@ -112,6 +112,7 @@ metadata:
 - 表单附件不要写进 `fields`，放在 `--json.attachments`；提交附件时必须同时传表单所属 Base 的 `--base-token`。
 - `+view-set-filter` 是唯一保留的 view reference；sort/group/card/timebar/visible-fields 这类配置先用对应 get 命令读现状，保留未修改字段，只替换用户要求变更的配置。
 - 视图适合持久化、共享和 UI 复用；一次性筛选/排序可先用 `+record-list` / `+record-search` 的 filter/sort 验证结果，再按需要沉淀为持久视图。
+- 需要读取 Created By、Modified Time 等系统自动字段时，用 `lark-cli base +record-list --base-token <base_token> --table-id <table_id> --include-automatic-fields --limit 50`；仍然配合 `--field-id` 和 `--limit` 控制输出范围。
 
 ## Token 与链接
 

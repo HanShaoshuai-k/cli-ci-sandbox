@@ -214,6 +214,9 @@ func dryRunRecordList(_ context.Context, runtime *common.RuntimeContext) *common
 	for _, field := range recordListFields(runtime) {
 		params.Add("field_id", field)
 	}
+	if runtime.Bool("include-automatic-fields") {
+		params.Set("automatic_fields", "true")
+	}
 	if viewID := runtime.Str("view-id"); viewID != "" {
 		params.Set("view_id", viewID)
 	}
@@ -392,6 +395,9 @@ func executeRecordList(runtime *common.RuntimeContext) error {
 	fields := recordListFields(runtime)
 	if len(fields) > 0 {
 		params["field_id"] = fields
+	}
+	if runtime.Bool("include-automatic-fields") {
+		params["automatic_fields"] = true
 	}
 	if viewID := runtime.Str("view-id"); viewID != "" {
 		params["view_id"] = viewID
