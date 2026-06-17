@@ -38,6 +38,18 @@ lark-cli calendar +agenda --as user
 | [`+rsvp`](references/lark-calendar-rsvp.md) | 回复日程（接受/拒绝/待定） |
 | [`+suggestion`](references/lark-calendar-suggestion.md) | 根据非明确时间或一段时间范围，推荐多个可用时间块方案 |
 
+常用创建示例：
+
+```bash
+lark-cli calendar +create --summary "Design review" --start 2026-06-12T10:00:00+08:00 --end 2026-06-12T11:00:00+08:00 --location "Room 7A" --as user --dry-run
+```
+
+易错命令示例：
+
+```bash
+lark-cli calendar +create --summary "Planning" --starts-at 2026-06-12T10:00:00+08:00 --end 2026-06-12T11:00:00+08:00 --as user --dry-run
+```
+
 ## 前置条件路由
 
 | 场景 | 前置要求 |

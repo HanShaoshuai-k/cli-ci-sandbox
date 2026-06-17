@@ -30,6 +30,9 @@ func buildEventData(runtime *common.RuntimeContext, startTs, endTs string) map[s
 			{"minutes": 5},
 		},
 	}
+	if location := strings.TrimSpace(runtime.Str("location")); location != "" {
+		eventData["location"] = map[string]string{"name": location}
+	}
 	if rrule := runtime.Str("rrule"); rrule != "" {
 		eventData["recurrence"] = rrule
 	}
@@ -80,6 +83,7 @@ var CalendarCreate = common.Shortcut{
 		{Name: "start", Desc: "start time (ISO 8601)", Required: true},
 		{Name: "end", Desc: "end time (ISO 8601)", Required: true},
 		{Name: "description", Desc: "event description"},
+		{Name: "location", Desc: "event location name"},
 		{Name: "attendee-ids", Desc: "attendee IDs, comma-separated (supports user ou_, chat oc_, room omm_)"},
 		{Name: "calendar-id", Desc: "calendar ID (default: primary)"},
 		{Name: "rrule", Desc: "recurrence rule (rfc5545)"},
@@ -88,7 +92,7 @@ var CalendarCreate = common.Shortcut{
 		if err := rejectCalendarAutoBotFallback(runtime); err != nil {
 			return err
 		}
-		for _, flag := range []string{"summary", "description", "rrule", "calendar-id"} {
+		for _, flag := range []string{"summary", "description", "location", "rrule", "calendar-id"} {
 			if val := runtime.Str(flag); val != "" {
 				if err := common.RejectDangerousCharsTyped("--"+flag, val); err != nil {
 					return err

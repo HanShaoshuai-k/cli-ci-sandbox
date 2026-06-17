@@ -140,6 +140,49 @@ func TestCreate_CreateEventOnly(t *testing.T) {
 	}
 }
 
+func TestCreate_IncludesLocation(t *testing.T) {
+	f, stdout, _, reg := cmdutil.TestFactory(t, defaultConfig())
+
+	stub := &httpmock.Stub{
+		Method: "POST",
+		URL:    "/open-apis/calendar/v4/calendars/cal_test123/events",
+		Body: map[string]interface{}{
+			"code": 0, "msg": "ok",
+			"data": map[string]interface{}{
+				"event": map[string]interface{}{
+					"event_id":   "evt_location",
+					"summary":    "Design Review",
+					"start_time": map[string]interface{}{"timestamp": "1742515200"},
+					"end_time":   map[string]interface{}{"timestamp": "1742518800"},
+				},
+			},
+		},
+	}
+	reg.Register(stub)
+
+	err := mountAndRun(t, CalendarCreate, []string{
+		"+create",
+		"--summary", "Design Review",
+		"--start", "2025-03-21T00:00:00+08:00",
+		"--end", "2025-03-21T01:00:00+08:00",
+		"--calendar-id", "cal_test123",
+		"--location", "Room 7A",
+		"--as", "bot",
+	}, f, stdout)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	body := decodeCalendarCapturedBody(t, stub)
+	location, ok := body["location"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("location=%T, want object in body %v", body["location"], body)
+	}
+	if got := location["name"]; got != "Room 7A" {
+		t.Fatalf("location.name=%v, want Room 7A", got)
+	}
+}
+
 func TestCreate_CreateEventOnly_PrettyFormat(t *testing.T) {
 	f, stdout, _, reg := cmdutil.TestFactory(t, defaultConfig())
 
