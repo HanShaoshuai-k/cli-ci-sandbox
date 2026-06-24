@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// BuildOption configures optional aspects of the command tree construction.
+// BuildOption configures optional aspects of command tree construction.
 type BuildOption func(*buildConfig)
 
 type buildConfig struct {
